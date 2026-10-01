@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* DevPulse AI Design System */
 :root {
   --primary-accent: #6366F1;

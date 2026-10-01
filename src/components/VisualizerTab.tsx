@@ -19,7 +19,9 @@ import {
   Clock, 
   AlertCircle,
   CheckCircle2,
-  Share2
+  Share2,
+  RefreshCw,
+  LayoutGrid
 } from 'lucide-react';
 import { ArchNode, ArchEdge } from '../types';
 
@@ -40,7 +42,6 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isSimulatingLoad, setIsSimulatingLoad] = useState<boolean>(false);
 
-  // Sync internal nodes if parent changes (e.g. after patch)
   useEffect(() => {
     setNodes(initialNodes);
   }, [initialNodes]);
@@ -76,12 +77,12 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;
 
-    const newX = Math.max(20, Math.min(1080, e.clientX - canvasRect.left));
-    const newY = Math.max(20, Math.min(420, e.clientY - canvasRect.top));
+    const newX = Math.max(10, Math.min(1080, (e.clientX - canvasRect.left) / zoomLevel - dragOffsetRef.current.x + 90));
+    const newY = Math.max(10, Math.min(440, (e.clientY - canvasRect.top) / zoomLevel - dragOffsetRef.current.y + 35));
 
     setNodes(prev => prev.map(n => {
       if (n.id === draggingNodeId) {
-        return { ...n, x: newX, y: newY };
+        return { ...n, x: Math.round(newX), y: Math.round(newY) };
       }
       return n;
     }));
@@ -91,16 +92,31 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
     setDraggingNodeId(null);
   };
 
+  // Auto-arrange topology into neat architectural columns
+  const handleAutoArrange = () => {
+    setNodes(prev => [
+      { ...prev.find(n => n.id === 'node-client')!, x: 60, y: 190 },
+      { ...prev.find(n => n.id === 'node-gateway')!, x: 280, y: 190 },
+      { ...prev.find(n => n.id === 'node-auth')!, x: 500, y: 80 },
+      { ...prev.find(n => n.id === 'node-payment')!, x: 500, y: 200 },
+      { ...prev.find(n => n.id === 'node-telemetry')!, x: 500, y: 320 },
+      { ...prev.find(n => n.id === 'node-kafka')!, x: 740, y: 200 },
+      { ...prev.find(n => n.id === 'node-ai')!, x: 740, y: 320 },
+      { ...prev.find(n => n.id === 'node-postgres')!, x: 960, y: 100 },
+      { ...prev.find(n => n.id === 'node-redis')!, x: 960, y: 260 },
+    ]);
+  };
+
   const handleTriggerLoadSpike = () => {
     setIsSimulatingLoad(true);
     onUpdateNodeStatus('node-payment', 'warning', 345);
     setTimeout(() => {
       setIsSimulatingLoad(false);
-    }, 4000);
+    }, 4500);
   };
 
   const handleOptimizeService = () => {
-    onUpdateNodeStatus('node-payment', 'healthy', 45);
+    onUpdateNodeStatus('node-payment', 'healthy', 38);
   };
 
   const getNodeIcon = (layer: ArchNode['layer']) => {
@@ -116,27 +132,80 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
     }
   };
 
+  const healthyCount = nodes.filter(n => n.status === 'healthy').length;
+
   return (
-    <div className="space-y-6">
-      {/* Top Banner / Pillar Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge badge-cyan">Pillar 2</span>
-            <span className="badge badge-indigo text-[11px]">Real-Time Topology Graph</span>
-            <span className="badge badge-emerald text-[11px] font-mono">WebSocket Network Pulses Active</span>
+    <div className="space-y-5">
+      {/* Executive Header Banner */}
+      <div className="glass-panel p-5 border border-slate-800 bg-gradient-to-r from-slate-900/95 via-cyan-950/20 to-slate-900/95 rounded-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="badge badge-cyan text-xs">Pillar 2</span>
+              <span className="badge badge-indigo text-xs font-mono">Dynamic Topological Mesh</span>
+              <span className="badge badge-emerald text-xs font-mono">WebSocket Edges Active</span>
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight mt-2 text-white flex items-center gap-2.5 font-heading">
+              <Layers className="w-6 h-6 text-[#06B6D4]" />
+              Interactive Architecture & Dependency Visualizer
+            </h2>
+            <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
+              Real-time canvas-based topological rendering: drag nodes to examine boundaries, monitor live network latency across microservices, and inspect dependency telemetry.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight mt-2 text-white flex items-center gap-2">
-            <Layers className="w-6 h-6 text-[#06B6D4]" />
-            Interactive Architecture & Dependency Visualizer
-          </h2>
-          <p className="text-sm text-slate-300 max-w-3xl mt-1">
-            Dynamic canvas-based topological rendering: drag nodes to rearrange, inspect live latency & error rates, and monitor real-time network traffic flow across microservice boundaries.
-          </p>
+
+          {/* Quick Metrics Strip */}
+          <div className="flex items-center gap-3 self-start lg:self-center shrink-0">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Active Nodes</div>
+              <div className="text-lg font-bold text-white font-mono">{nodes.length}</div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Health Status</div>
+              <div className="text-lg font-bold text-emerald-400 font-mono">
+                {healthyCount}/{nodes.length} OK
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Mesh Latency</div>
+              <div className="text-lg font-bold text-cyan-400 font-mono">34ms p99</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Control Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 glass-panel p-3 border border-slate-800 rounded-xl">
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs pb-1 sm:pb-0">
+          <span className="text-slate-400 flex items-center gap-1 font-medium pl-1 text-[11px] uppercase font-mono">
+            <Filter className="w-3 h-3 text-[#06B6D4]" /> Layers:
+          </span>
+          {['all', 'frontend', 'gateway', 'microservice', 'auth', 'datastore', 'queue', 'ai'].map(layer => (
+            <button
+              key={layer}
+              onClick={() => setSelectedLayer(layer)}
+              className={`px-2.5 py-1 rounded-lg capitalize font-mono text-[11px] transition-all ${
+                selectedLayer === layer
+                  ? 'bg-[#06B6D4] text-slate-950 font-bold shadow-md'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700/60'
+              }`}
+            >
+              {layer}
+            </button>
+          ))}
         </div>
 
-        {/* Canvas Controls */}
-        <div className="flex items-center gap-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-700/80 self-start md:self-center">
+        {/* Canvas Navigation Tools */}
+        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+          <button
+            onClick={handleAutoArrange}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono"
+            title="Auto-arrange nodes by architectural tiers"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Auto-Layout</span>
+          </button>
+          <div className="h-4 w-[1px] bg-slate-700" />
           <button
             onClick={() => setZoomLevel(prev => Math.min(1.4, prev + 0.1))}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
@@ -153,64 +222,41 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
           </button>
           <button
             onClick={() => setZoomLevel(1)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-mono"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
             title="Reset Zoom"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
-          <div className="h-4 w-[1px] bg-slate-700" />
-          <span className="text-xs font-mono text-cyan-400 px-1">
-            {Math.round(zoomLevel * 100)}%
-          </span>
         </div>
       </div>
 
-      {/* Layer Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-        <span className="text-slate-400 flex items-center gap-1 font-medium pl-1">
-          <Filter className="w-3.5 h-3.5" /> Filter Layer:
-        </span>
-        {['all', 'frontend', 'gateway', 'microservice', 'auth', 'datastore', 'queue', 'ai'].map(layer => (
-          <button
-            key={layer}
-            onClick={() => setSelectedLayer(layer)}
-            className={`px-3 py-1 rounded-lg capitalize font-mono transition-all ${
-              selectedLayer === layer
-                ? 'bg-[#06B6D4] text-slate-950 font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
-            }`}
-          >
-            {layer}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Canvas & Details Drawer Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Interactive Canvas (8 Cols) */}
-        <div className="lg:col-span-8 glass-panel overflow-hidden border border-slate-800 flex flex-col">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs">
+      {/* Canvas & Sidebar Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Canvas Area (8 Cols) */}
+        <div className="lg:col-span-8 glass-panel overflow-hidden border border-slate-800 flex flex-col rounded-2xl">
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800 text-xs font-mono">
             <div className="flex items-center gap-2 text-slate-300">
               <Activity className="w-4 h-4 text-[#06B6D4]" />
-              <span className="font-mono">Topology Mesh ({filteredNodes.length} Nodes, {edges.length} Active Edges)</span>
+              <span>Interactive Topology Mesh ({filteredNodes.length} Nodes Visible)</span>
             </div>
-            <div className="flex items-center gap-3 font-mono text-[11px] text-slate-400">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center gap-4 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" /> Healthy
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400" /> Degraded / Warning
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400" /> Degraded
               </span>
-              <span className="text-[#6366F1]">Click & drag nodes</span>
+              <span className="text-[#6366F1] hidden sm:inline">Drag nodes to rearrange</span>
             </div>
           </div>
 
-          {/* SVG Canvas Area */}
+          {/* Canvas Viewport */}
           <div 
             ref={canvasRef}
             onMouseMove={handleMouseMoveCanvas}
             onMouseUp={handleMouseUpCanvas}
-            className="canvas-grid-bg relative w-full h-[480px] overflow-hidden select-none bg-[#070D1B]"
+            className="canvas-grid-bg relative w-full h-[500px] overflow-hidden select-none bg-[#070D1B]"
           >
             <div 
               style={{ 
@@ -222,7 +268,7 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
                 position: 'relative'
               }}
             >
-              {/* Connecting Edges (SVG overlay) */}
+              {/* Dynamic SVG Edges */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
                 <defs>
                   <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -236,32 +282,28 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
                   const tgt = nodes.find(n => n.id === edge.target);
                   if (!src || !tgt) return null;
 
-                  // Center points of nodes (approx width 180, height 70)
-                  const x1 = src.x + 90;
+                  const x1 = src.x + 95;
                   const y1 = src.y + 35;
-                  const x2 = tgt.x + 90;
+                  const x2 = tgt.x + 95;
                   const y2 = tgt.y + 35;
 
-                  // Curvature control
                   const dx = (x2 - x1) * 0.5;
                   const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 
                   return (
                     <g key={edge.id}>
-                      {/* Base edge background line */}
                       <path
                         d={d}
                         fill="none"
-                        stroke="rgba(148, 163, 184, 0.15)"
+                        stroke="rgba(148, 163, 184, 0.18)"
                         strokeWidth="2.5"
                       />
-                      {/* Active WebSocket pulsing edge */}
                       {edge.isPulsing && (
                         <path
                           d={d}
                           fill="none"
                           stroke="url(#edgeGrad)"
-                          strokeWidth="2"
+                          strokeWidth="2.2"
                           className="edge-pulse-active"
                         />
                       )}
@@ -270,7 +312,7 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
                 })}
               </svg>
 
-              {/* Render Nodes */}
+              {/* Render Draggable Nodes */}
               {filteredNodes.map(node => {
                 const isSelected = node.id === selectedNodeId;
                 const isWarning = node.status === 'warning';
@@ -285,10 +327,10 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
                     }}
                     className={`absolute z-20 w-[190px] rounded-xl p-3 select-none backdrop-blur-md transition-all ${
                       isSelected
-                        ? 'bg-[#1E293B]/95 border-2 border-[#06B6D4] shadow-[0_0_25px_rgba(6,182,212,0.45)]'
+                        ? 'bg-[#1E293B]/95 border-2 border-[#06B6D4] shadow-[0_0_25px_rgba(6,182,212,0.45)] ring-1 ring-cyan-400'
                         : isWarning
-                        ? 'bg-[#1E293B]/90 border border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                        : 'bg-[#0F172A]/90 border border-slate-700/80 hover:border-[#6366F1]/60'
+                        ? 'bg-[#1E293B]/90 border border-amber-500/70 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                        : 'bg-[#0F172A]/90 border border-slate-700/80 hover:border-[#6366F1]/70'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
@@ -325,33 +367,43 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
               })}
             </div>
           </div>
+
+          {/* Protocol Legend Bar */}
+          <div className="px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400 overflow-x-auto">
+            <span className="text-slate-500 uppercase">Protocols:</span>
+            <span className="badge badge-cyan text-[10px] py-0">HTTPS / Wasm</span>
+            <span className="badge badge-indigo text-[10px] py-0">gRPC (Binary)</span>
+            <span className="badge badge-emerald text-[10px] py-0">WebSocket Stream</span>
+            <span className="badge badge-amber text-[10px] py-0">Kafka Event Stream</span>
+            <span className="badge badge-rose text-[10px] py-0">SQL Connection Pool</span>
+          </div>
         </div>
 
-        {/* Node Details & Telemetry Drawer (4 Cols) */}
+        {/* Node Telemetry & Controls Sidebar (4 Cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="glass-panel p-5 space-y-4">
+          <div className="glass-panel p-5 space-y-4 border border-slate-800 rounded-2xl">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="badge badge-indigo text-[10px] uppercase font-bold">
                     {selectedNode.layer}
                   </span>
-                  <span className={`badge text-[10px] ${
+                  <span className={`badge text-[10px] font-bold ${
                     selectedNode.status === 'healthy' ? 'badge-emerald' : 'badge-amber'
                   }`}>
                     {selectedNode.status.toUpperCase()}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mt-1">
+                <h3 className="text-lg font-bold text-white mt-1.5 font-heading">
                   {selectedNode.name}
                 </h3>
               </div>
             </div>
 
-            {/* Live Metrics Grid */}
+            {/* Metrics Grid */}
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-medium">p99 Latency</div>
+              <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+                <div className="text-[10px] text-slate-400 uppercase font-mono">p99 Latency</div>
                 <div className={`text-xl font-bold font-mono mt-0.5 ${
                   selectedNode.latencyP99 > 150 ? 'text-amber-400' : 'text-emerald-400'
                 }`}>
@@ -360,34 +412,34 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
                 <div className="text-[10px] text-slate-500 mt-0.5">SLO Target: &lt; 50ms</div>
               </div>
 
-              <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-medium">Throughput</div>
+              <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+                <div className="text-[10px] text-slate-400 uppercase font-mono">Throughput</div>
                 <div className="text-xl font-bold font-mono text-cyan-400 mt-0.5">
                   {selectedNode.rps} <span className="text-xs text-slate-400 font-normal">req/s</span>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Active WebSocket mesh</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Live WebSocket mesh</div>
               </div>
 
-              <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-medium">Error Rate</div>
+              <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+                <div className="text-[10px] text-slate-400 uppercase font-mono">Error Rate</div>
                 <div className="text-xl font-bold font-mono text-purple-400 mt-0.5">
                   {selectedNode.errorRate}%
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Zero unhandled 5xx</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">0 unhandled 5xx</div>
               </div>
 
-              <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-medium">AST Health Score</div>
+              <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800">
+                <div className="text-[10px] text-slate-400 uppercase font-mono">AST Health</div>
                 <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
                   {selectedNode.astScore} / 100
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Continuous AST check</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Continuous audit</div>
               </div>
             </div>
 
-            {/* Tech Stack Tags */}
+            {/* Tech Stack */}
             <div>
-              <div className="text-xs text-slate-400 mb-1.5 font-medium">Underlying Technologies:</div>
+              <div className="text-xs text-slate-400 mb-1.5 font-medium">Technologies:</div>
               <div className="flex flex-wrap gap-1.5">
                 {selectedNode.technologies.map(tech => (
                   <span key={tech} className="badge badge-indigo text-[11px] font-mono">
@@ -397,9 +449,9 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
               </div>
             </div>
 
-            {/* Inter-service Dependencies */}
+            {/* Inbound & Outbound Connections */}
             <div className="pt-2 border-t border-slate-800">
-              <div className="text-xs text-slate-400 mb-2 font-medium">Direct Inbound / Outbound Links:</div>
+              <div className="text-xs text-slate-400 mb-2 font-medium">Inter-Service Dependencies:</div>
               <div className="space-y-1.5">
                 {edges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).map(edge => {
                   const otherNodeId = edge.source === selectedNode.id ? edge.target : edge.source;
@@ -423,7 +475,7 @@ export const VisualizerTab: React.FC<VisualizerTabProps> = ({
             <div className="pt-3 border-t border-slate-800 space-y-2">
               <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5 text-amber-400" />
-                <span>Simulate Dynamic Architectural State</span>
+                <span>Simulate Architectural Contention</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button

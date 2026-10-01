@@ -18,7 +18,11 @@ import {
   ShieldCheck,
   Check,
   Flame,
-  Binary
+  Binary,
+  Filter,
+  ArrowDownRight,
+  FileCode,
+  Shield
 } from 'lucide-react';
 import { PullRequest } from '../types';
 
@@ -35,7 +39,8 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
   activePRId,
   setActivePRId
 }) => {
-  const [subTab, setSubTab] = useState<'pr-diff' | 'ast-pipeline'>('pr-diff');
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'diff' | 'ast-details' | 'prompt-playground'>('diff');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [isApplying, setIsApplying] = useState(false);
   const [appliedSuccess, setAppliedSuccess] = useState<string | null>(null);
 
@@ -50,7 +55,12 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
     riskScore: number;
   } | null>(null);
 
-  const activePR = pullRequests.find(pr => pr.id === activePRId) || pullRequests[0];
+  const filteredPRs = pullRequests.filter(pr => {
+    if (filterCategory === 'all') return true;
+    return pr.category.toLowerCase().includes(filterCategory.toLowerCase());
+  });
+
+  const activePR = pullRequests.find(pr => pr.id === activePRId) || filteredPRs[0] || pullRequests[0];
 
   const handleApplyClick = (prId: string) => {
     setIsApplying(true);
@@ -59,19 +69,18 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
       setIsApplying(false);
       setAppliedSuccess(prId);
       
-      // Fire celebration confetti
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 85,
+          spread: 80,
           origin: { y: 0.6 },
           colors: ['#6366F1', '#06B6D4', '#EC4899', '#10B981']
         });
       } catch (e) {
-        console.log('Confetti effect');
+        console.log('Confetti effect triggered');
       }
 
-      setTimeout(() => setAppliedSuccess(null), 4000);
+      setTimeout(() => setAppliedSuccess(null), 4500);
     }, 700);
   };
 
@@ -86,9 +95,9 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
           tokens: 1840,
           astNodes: 1420,
           findings: [
-            'Concurrency vulnerability: unguarded read-then-write on wallet balance.',
-            'Uncaught DB pool connection leak detected in non-guaranteed branch.',
-            'Remediation: Wrap with DistributedLock.acquire() and pgPool.release() in finally-block.'
+            'Concurrency hazard: unguarded balance mutation across async await boundaries.',
+            'Uncaught database connection pool leak detected in error return branch.',
+            'Remediation: Enforce Mutex.acquireLock() with RAII async disposal and client.release() in finally.'
           ],
           riskScore: 92
         });
@@ -98,9 +107,9 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
           tokens: 1220,
           astNodes: 860,
           findings: [
-            'OWASP A03: ReDoS catastrophic backtracking in regex quantifier.',
-            'Algorithm spoofing vulnerability: jwt.decode accepts algorithm "none".',
-            'Remediation: Enforce RS256 algorithm whitelist with clockTolerance: 10.'
+            'OWASP A03: ReDoS catastrophic backtracking in regex quantifier pattern.',
+            'Algorithm spoofing hazard: jwt.decode accepts insecure "none" algorithm.',
+            'Remediation: Whitelist explicit RS256 algorithm and apply strict clock tolerance.'
           ],
           riskScore: 84
         });
@@ -110,9 +119,9 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
           tokens: 950,
           astNodes: 520,
           findings: [
-            'Memory leak: Unbounded event listener on shared telemetryBus.',
-            'Heap growth rate: ~14MB per 1k disconnected sockets.',
-            'Remediation: Attach ws.once("close") teardown handler with bus.off().'
+            'Memory leak: Unbounded event listener accumulation on shared telemetryBus.',
+            'Heap consumption grows by ~14MB per 1k disconnected client sockets.',
+            'Remediation: Attach teardown handler in ws.once("close") with bus.off().'
           ],
           riskScore: 68
         });
@@ -123,442 +132,441 @@ export const AuditorTab: React.FC<AuditorTabProps> = ({
           astNodes: 980,
           findings: [
             'OWASP A03 SQL Injection: Direct string interpolation in client.query().',
-            'Untrusted user input payload passed to raw SQL template.',
-            'Remediation: Use parameterized queries with array params [userId].'
+            'Untrusted user payload passed unescaped to database engine.',
+            'Remediation: Enforce parameterized query arrays.'
           ],
           riskScore: 96
         });
       }
-    }, 600);
+    }, 550);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Top Banner / Pillar Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge badge-indigo">Pillar 1</span>
-            <span className="badge badge-cyan font-mono text-[11px]">Gemini 3.8 AST Engine</span>
-            <span className="badge badge-emerald text-[11px]">Real-time Webhook Hooked</span>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight mt-2 text-white flex items-center gap-2">
-            <ShieldAlert className="w-6 h-6 text-[#6366F1]" />
-            Automated AI Code & Performance Auditor
-          </h2>
-          <p className="text-sm text-slate-300 max-w-3xl mt-1">
-            Deep semantic analysis beyond basic linting: parses Abstract Syntax Trees (AST) to detect logic flaws, race conditions, OWASP Top 10 vulnerabilities, and generate one-click verified refactorings.
-          </p>
-        </div>
+  const criticalCount = pullRequests.filter(p => p.severity === 'critical' && p.status !== 'refactored').length;
+  const verifiedCount = pullRequests.filter(p => p.status === 'refactored').length;
 
-        {/* Sub-tab toggle */}
-        <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 self-start md:self-center">
-          <button
-            onClick={() => setSubTab('pr-diff')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              subTab === 'pr-diff'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <GitPullRequest className="w-3.5 h-3.5" />
-            <span>PR Review & 1-Click Fix</span>
-          </button>
-          <button
-            onClick={() => setSubTab('ast-pipeline')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              subTab === 'ast-pipeline'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>AST & Prompt Playground</span>
-          </button>
+  return (
+    <div className="space-y-5">
+      {/* Executive Header Banner */}
+      <div className="glass-panel p-5 border border-slate-800 bg-gradient-to-r from-slate-900/95 via-indigo-950/20 to-slate-900/95 rounded-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="badge badge-indigo text-xs">Pillar 1</span>
+              <span className="badge badge-cyan text-xs font-mono">Gemini 3.8 Flash AST Pipeline</span>
+              <span className="badge badge-emerald text-xs font-mono">Git Webhooks Hooked</span>
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight mt-2 text-white flex items-center gap-2.5 font-heading">
+              <ShieldAlert className="w-6 h-6 text-[#6366F1]" />
+              Automated AI Code & Performance Auditor
+            </h2>
+            <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
+              Deep semantic code analysis on incoming pull requests: parses Abstract Syntax Trees (AST) to detect concurrency race conditions, OWASP Top 10 vulnerabilities, and generates verified 1-click refactoring patches.
+            </p>
+          </div>
+
+          {/* Quick Metrics Strip */}
+          <div className="flex items-center gap-3 self-start lg:self-center shrink-0">
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Pending Review</div>
+              <div className="text-lg font-bold text-cyan-400 font-mono">
+                {pullRequests.length - verifiedCount}
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Critical Risks</div>
+              <div className={`text-lg font-bold font-mono ${criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {criticalCount}
+              </div>
+            </div>
+            <div className="bg-slate-900/80 border border-slate-800 rounded-xl px-3.5 py-2 text-center">
+              <div className="text-[10px] text-slate-400 uppercase font-mono">Verified Fixes</div>
+              <div className="text-lg font-bold text-emerald-400 font-mono">
+                {verifiedCount}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {subTab === 'pr-diff' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* PR Selector Sidebar (4 Cols) */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-400 px-1">
-              <span>ACTIVE PULL REQUESTS ({pullRequests.length})</span>
-              <span className="text-[#06B6D4] font-mono">AST Monitored</span>
+      {/* Main Two-Column Master/Detail Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* Left Column: PR Queue (4 Cols) */}
+        <div className="lg:col-span-4 space-y-3">
+          
+          {/* Filter Bar */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+              <Filter className="w-3.5 h-3.5 text-[#06B6D4]" />
+              <span>CATEGORY FILTER:</span>
             </div>
-
-            <div className="space-y-2.5">
-              {pullRequests.map(pr => {
-                const isSelected = pr.id === activePR.id;
-                const isRefactored = pr.status === 'refactored';
-
-                return (
-                  <div
-                    key={pr.id}
-                    onClick={() => setActivePRId(pr.id)}
-                    className={`p-3.5 rounded-xl cursor-pointer transition-all border ${
-                      isSelected
-                        ? 'bg-slate-800/90 border-[#6366F1] shadow-[0_0_18px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-[#06B6D4]">
-                          #{pr.number}
-                        </span>
-                        {isRefactored ? (
-                          <span className="badge badge-emerald text-[10px] py-0">
-                            <CheckCircle2 className="w-3 h-3" /> Verified & Refactored
-                          </span>
-                        ) : (
-                          <span className={`badge text-[10px] py-0 ${
-                            pr.severity === 'critical' ? 'badge-rose' : pr.severity === 'high' ? 'badge-amber' : 'badge-cyan'
-                          }`}>
-                            {pr.severity.toUpperCase()} RISK
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-mono">{pr.timestamp}</span>
-                    </div>
-
-                    <h4 className="text-sm font-semibold text-white mt-1.5 line-clamp-2 leading-snug">
-                      {pr.title}
-                    </h4>
-
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-800/80 text-[11px] text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <img 
-                          src={pr.authorAvatar} 
-                          alt={pr.author} 
-                          className="w-4 h-4 rounded-full object-cover" 
-                        />
-                        <span>{pr.author}</span>
-                      </div>
-                      <div className="font-mono">
-                        Complexity: <span className="text-rose-400">{pr.cyclomaticComplexityBefore}</span> → <span className="text-emerald-400">{pr.cyclomaticComplexityAfter}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Quick Metrics Callout */}
-            <div className="glass-panel p-4 mt-4 bg-gradient-to-br from-indigo-950/30 to-slate-900/60 border-indigo-500/20">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#A5B4FC]">
-                <Zap className="w-4 h-4 text-[#6366F1]" />
-                <span>DevPulse AST Analysis Engine</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
-                AST parsing operates before PR merge, scanning control-flow graphs (CFG) for concurrency hazards and OWASP Top 10 vulnerabilities.
-              </p>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-center">
-                <div className="bg-slate-800/60 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400">Avg Scan Time</div>
-                  <div className="text-sm font-bold text-[#06B6D4] font-mono">180ms</div>
-                </div>
-                <div className="bg-slate-800/60 rounded-lg p-2 border border-slate-700/50">
-                  <div className="text-[10px] text-slate-400">Fix Confidence</div>
-                  <div className="text-sm font-bold text-emerald-400 font-mono">99.4%</div>
-                </div>
-              </div>
-            </div>
+            <span className="text-[11px] font-mono text-cyan-400">
+              {filteredPRs.length} PRs Found
+            </span>
           </div>
 
-          {/* PR Details & Diff Viewer (8 Cols) */}
-          <div className="lg:col-span-8 space-y-4">
-            {/* PR Header & 1-Click Action */}
-            <div className="glass-panel p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-bold text-[#06B6D4]">
-                      PR #{activePR.number}
-                    </span>
-                    <span className="text-xs text-slate-400 font-mono">
-                      {activePR.branch} → {activePR.targetBranch}
-                    </span>
-                    <span className="badge badge-indigo text-[10px]">{activePR.category}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mt-1">
-                    {activePR.title}
-                  </h3>
-                </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            {['all', 'concurrency', 'owasp', 'memory'].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
+                className={`px-2.5 py-1 rounded-lg capitalize font-mono text-[11px] transition-all ${
+                  filterCategory === cat
+                    ? 'bg-[#6366F1] text-white font-bold shadow-md'
+                    : 'bg-slate-900/80 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
 
-                {/* 1-Click Fix Button */}
-                {activePR.status === 'refactored' ? (
-                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Patch Applied & Verified</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleApplyClick(activePR.id)}
-                    disabled={isApplying}
-                    className="btn-primary self-start sm:self-center !py-2.5 !px-4 text-xs font-bold"
-                  >
-                    {isApplying ? (
-                      <>
-                        <RotateCcw className="w-4 h-4 animate-spin text-white" />
-                        <span>Applying AST Patch...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 text-[#FDE047] animate-pulse" />
-                        <span>Apply Verified 1-Click Patch</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
+          {/* PR Card List */}
+          <div className="space-y-2.5">
+            {filteredPRs.map(pr => {
+              const isSelected = pr.id === activePR.id;
+              const isRefactored = pr.status === 'refactored';
 
-              {appliedSuccess === activePR.id && (
-                <div className="p-3 rounded-lg bg-emerald-950/70 border border-emerald-500 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>
-                      <strong>Patch Applied!</strong> Distributed lock integrated, connection pool leak resolved, and test suite rerun successfully.
-                    </span>
-                  </div>
-                  <span className="font-mono text-[10px] text-emerald-200">Commit: #8a3f91</span>
-                </div>
-              )}
-
-              {/* Semantic Findings Callout */}
-              <div className="bg-slate-900/90 rounded-xl p-4 border border-slate-800 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Deep Semantic Analysis & Vulnerability Vectors
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    AST Nodes: {activePR.astDetails.nodesInspected} | Depth: {activePR.astDetails.depth}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {activePR.summary}
-                </p>
-                <div className="space-y-1.5 pt-1">
-                  {activePR.semanticAnalysis.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <span className="text-[#6366F1] font-bold mt-0.5">•</span>
-                      <span>{item}</span>
+              return (
+                <div
+                  key={pr.id}
+                  onClick={() => setActivePRId(pr.id)}
+                  className={`p-4 rounded-xl cursor-pointer transition-all border ${
+                    isSelected
+                      ? 'bg-slate-800/95 border-[#6366F1] shadow-[0_4px_20px_rgba(99,102,241,0.25)] ring-1 ring-[#6366F1]/50'
+                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/40'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#06B6D4]">
+                        PR #{pr.number}
+                      </span>
+                      {isRefactored ? (
+                        <span className="badge badge-emerald text-[10px] py-0 font-medium">
+                          <CheckCircle2 className="w-3 h-3" /> Refactored
+                        </span>
+                      ) : (
+                        <span className={`badge text-[10px] py-0 font-semibold ${
+                          pr.severity === 'critical' ? 'badge-rose' : pr.severity === 'high' ? 'badge-amber' : 'badge-cyan'
+                        }`}>
+                          {pr.severity.toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <span className="text-[10px] text-slate-400 font-mono">{pr.timestamp}</span>
+                  </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 mt-2 text-[11px] text-slate-300 font-mono">
-                  <div className="text-cyan-400 font-bold mb-1">AST Fix Rule:</div>
-                  {activePR.astDetails.astFixRule}
-                </div>
-              </div>
-            </div>
+                  <h4 className="text-sm font-semibold text-white mt-2 leading-snug">
+                    {pr.title}
+                  </h4>
 
-            {/* Interactive Code Diff Viewer */}
-            <div className="glass-panel overflow-hidden border border-slate-800">
-              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800">
-                <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
-                  <FileDiff className="w-4 h-4 text-[#6366F1]" />
-                  <span>{activePR.fileChanged}</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs font-mono">
-                  <span className="text-emerald-400">
-                    +{activePR.diffLines.filter(l => l.type === 'add').length} lines
-                  </span>
-                  <span className="text-rose-400">
-                    -{activePR.diffLines.filter(l => l.type === 'del').length} lines
-                  </span>
-                </div>
-              </div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-1.5 flex items-center gap-1.5">
+                    <FileCode className="w-3 h-3 text-slate-500" />
+                    <span className="truncate">{pr.fileChanged}</span>
+                  </div>
 
-              {/* Code lines */}
-              <div className="overflow-x-auto p-2 bg-[#0A0F1D] text-xs font-mono max-h-[460px] overflow-y-auto">
-                <table className="w-full border-collapse">
-                  <tbody>
-                    {activePR.diffLines.map((line, idx) => (
-                      <tr 
-                        key={idx} 
-                        className={`transition-colors ${
-                          line.type === 'add' 
-                            ? 'diff-line-add' 
-                            : line.type === 'del' 
-                            ? 'diff-line-del' 
-                            : 'diff-line-normal'
-                        }`}
-                      >
-                        <td className="w-8 py-0.5 px-2 text-right text-slate-600 select-none text-[11px]">
-                          {line.oldLine || ''}
-                        </td>
-                        <td className="w-8 py-0.5 px-2 text-right text-slate-600 select-none text-[11px]">
-                          {line.newLine || ''}
-                        </td>
-                        <td className="py-0.5 px-3 whitespace-pre font-mono">
-                          {line.text}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5">
+                      <img 
+                        src={pr.authorAvatar} 
+                        alt={pr.author} 
+                        className="w-4 h-4 rounded-full object-cover" 
+                      />
+                      <span>{pr.author}</span>
+                    </div>
+                    <div className="font-mono">
+                      Complexity: <span className="text-rose-400 font-bold">{pr.cyclomaticComplexityBefore}</span> → <span className="text-emerald-400 font-bold">{pr.cyclomaticComplexityAfter}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      ) : (
-        /* SubTab 2: AST Inspector & Prompt Orchestrator Playground */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Controls & Preset Selector (4 Cols) */}
-          <div className="lg:col-span-4 space-y-4">
-            <div className="glass-panel p-5 space-y-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-[#06B6D4]" />
-                AST Prompt Pipeline Config
-              </h3>
-              <p className="text-xs text-slate-300">
-                DevPulse AI extracts Abstract Syntax Tree representation from raw source files and injects structured AST node context into Gemini LLM prompt orchestration pipelines.
-              </p>
 
+        {/* Right Column: Detailed Workspace (8 Cols) */}
+        <div className="lg:col-span-8 space-y-4">
+          
+          {/* Workspace Action Bar */}
+          <div className="glass-panel p-5 border border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <label className="text-xs text-slate-400 block mb-2 font-medium">Select Vulnerability Test Preset:</label>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setAstPreset('race')}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs font-mono transition-all border ${
-                      astPreset === 'race'
-                        ? 'bg-[#6366F1]/20 border-[#6366F1] text-white'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-bold text-[#A5B4FC]">1. Concurrency Race Condition</div>
-                    <div className="text-[11px] text-slate-400">Detached await with balance mutation</div>
-                  </button>
-
-                  <button
-                    onClick={() => setAstPreset('jwt')}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs font-mono transition-all border ${
-                      astPreset === 'jwt'
-                        ? 'bg-[#6366F1]/20 border-[#6366F1] text-white'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-bold text-[#67E8F9]">2. OWASP A03: ReDoS & Algorithm Spoofing</div>
-                    <div className="text-[11px] text-slate-400">Catastrophic regex backtracking</div>
-                  </button>
-
-                  <button
-                    onClick={() => setAstPreset('leak')}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs font-mono transition-all border ${
-                      astPreset === 'leak'
-                        ? 'bg-[#6366F1]/20 border-[#6366F1] text-white'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-bold text-[#F472B6]">3. Memory Leak: Event Listener Accumulation</div>
-                    <div className="text-[11px] text-slate-400">Unbounded EventEmitter on connection</div>
-                  </button>
-
-                  <button
-                    onClick={() => setAstPreset('sqli')}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs font-mono transition-all border ${
-                      astPreset === 'sqli'
-                        ? 'bg-[#6366F1]/20 border-[#6366F1] text-white'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-bold text-amber-400">4. OWASP A03: SQL Injection</div>
-                    <div className="text-[11px] text-slate-400">Unescaped string interpolation in query</div>
-                  </button>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/40 text-cyan-300">
+                    PR #{activePR.number}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {activePR.branch} → {activePR.targetBranch}
+                  </span>
+                  <span className="badge badge-indigo text-[10px]">{activePR.category}</span>
                 </div>
+                <h3 className="text-lg font-bold text-white mt-1.5 font-heading">
+                  {activePR.title}
+                </h3>
               </div>
 
-              <button
-                onClick={handleRunASTPipeline}
-                disabled={isSimulatingAST}
-                className="w-full btn-primary justify-center !py-2.5 text-xs font-bold"
-              >
-                {isSimulatingAST ? (
-                  <>
-                    <RotateCcw className="w-4 h-4 animate-spin" />
-                    <span>Parsing AST & Orchestrating LLM...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 text-emerald-400" />
-                    <span>Execute AST Pipeline & Gemini Model</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* AST Tree Visualizer & Prompt Stream (8 Cols) */}
-          <div className="lg:col-span-8 space-y-4">
-            <div className="glass-panel p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Binary className="w-4 h-4 text-[#6366F1]" />
-                  <span className="text-sm font-bold text-white">AST Syntax Tree & Context Pipeline</span>
+              {/* 1-Click Action Button */}
+              {activePR.status === 'refactored' ? (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-400 text-xs font-semibold shrink-0">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Patch Applied & Verified</span>
                 </div>
-                <span className="badge badge-cyan font-mono text-[10px]">
-                  Babel / SWC Parser Active
+              ) : (
+                <button
+                  onClick={() => handleApplyClick(activePR.id)}
+                  disabled={isApplying}
+                  className="btn-primary shrink-0 !py-2.5 !px-4 text-xs font-bold"
+                >
+                  {isApplying ? (
+                    <>
+                      <RotateCcw className="w-4 h-4 animate-spin text-white" />
+                      <span>Verifying & Applying Patch...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-[#FDE047] animate-pulse" />
+                      <span>Apply Verified 1-Click Patch</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Success Notification Alert */}
+            {appliedSuccess === activePR.id && (
+              <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500 text-emerald-300 text-xs flex items-center justify-between animate-fadeIn">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>
+                    <strong>Patch Successfully Applied!</strong> Mutex locks committed, database connection leak eliminated, cyclomatic complexity reduced from {activePR.cyclomaticComplexityBefore} to {activePR.cyclomaticComplexityAfter}, and tests passed.
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] text-emerald-200 shrink-0 bg-emerald-900/60 px-2 py-0.5 rounded">
+                  Commit #8a3f91
                 </span>
               </div>
+            )}
 
-              {/* AST Tree snippet */}
-              <div className="bg-[#0A0F1D] p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 max-h-60 overflow-y-auto">
-                <div className="text-slate-500 mb-1">// Parsed AST Nodes (Control Flow Graph)</div>
-                <div className="text-purple-400">Program</div>
-                <div className="pl-4 text-blue-400">└─ FunctionDeclaration (id: "processSettlement", async: true)</div>
-                <div className="pl-8 text-emerald-400">├─ VariableDeclaration (kind: "const", id: "client")</div>
-                <div className="pl-8 text-rose-400">├─ AwaitExpression (callee: "pgPool.connect") ⚠️ [Acquired without RAII lease]</div>
-                <div className="pl-8 text-yellow-400">├─ IfStatement (test: BinaryExpression "&gt;=")</div>
-                <div className="pl-12 text-rose-400">├─ AwaitExpression (callee: "sleep") ⚠️ [Race window gap: 40ms]</div>
-                <div className="pl-12 text-blue-400">└─ CallExpression (callee: "client.query", method: "UPDATE")</div>
-                <div className="pl-8 text-rose-400">└─ ReturnStatement (missing client.release() in error branch)</div>
-              </div>
+            {/* Workspace View Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pt-2 text-xs font-medium">
+              <button
+                onClick={() => setActiveWorkspaceTab('diff')}
+                className={`flex items-center gap-1.5 pb-2.5 border-b-2 font-mono transition-all ${
+                  activeWorkspaceTab === 'diff'
+                    ? 'border-[#6366F1] text-white font-bold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <FileDiff className="w-3.5 h-3.5 text-[#6366F1]" />
+                <span>Code Diff & Refactoring</span>
+              </button>
 
-              {/* Gemini Prompt Template preview */}
-              <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-slate-400 flex items-center justify-between">
-                  <span>ORCHESTRATED LLM PROMPT (Gemini 3.8 Flash)</span>
-                  <span className="text-[#06B6D4] font-mono text-[10px]">Strict JSON Schema Output</span>
+              <button
+                onClick={() => setActiveWorkspaceTab('ast-details')}
+                className={`flex items-center gap-1.5 pb-2.5 border-b-2 font-mono transition-all ${
+                  activeWorkspaceTab === 'ast-details'
+                    ? 'border-[#6366F1] text-white font-bold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-[#06B6D4]" />
+                <span>Semantic & OWASP Analysis</span>
+              </button>
+
+              <button
+                onClick={() => setActiveWorkspaceTab('prompt-playground')}
+                className={`flex items-center gap-1.5 pb-2.5 border-b-2 font-mono transition-all ${
+                  activeWorkspaceTab === 'prompt-playground'
+                    ? 'border-[#6366F1] text-white font-bold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Cpu className="w-3.5 h-3.5 text-[#EC4899]" />
+                <span>Gemini AST Playground</span>
+              </button>
+            </div>
+
+            {/* Tab 1: Interactive Code Diff */}
+            {activeWorkspaceTab === 'diff' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <div className="text-slate-300 flex items-center gap-1.5">
+                    <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{activePR.fileChanged}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-emerald-400">
+                      +{activePR.diffLines.filter(l => l.type === 'add').length} additions
+                    </span>
+                    <span className="text-rose-400">
+                      -{activePR.diffLines.filter(l => l.type === 'del').length} deletions
+                    </span>
+                  </div>
                 </div>
-                <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 leading-relaxed">
-                  <span className="text-slate-500">// System Role:</span> Senior Distributed Systems & Security Architect<br />
-                  <span className="text-slate-500">// Context Injection:</span> AST nodes inspected: 1,420; cyclomatic depth: 9; concurrency hazards: detected.<br />
-                  <span className="text-slate-500">// Task:</span> Provide minimal, guaranteed-safe refactoring with distributed lock & connection pooling cleanup.
+
+                {/* Diff Viewer */}
+                <div className="overflow-x-auto rounded-xl bg-[#070D1B] border border-slate-800 text-xs font-mono max-h-[460px] overflow-y-auto">
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      {activePR.diffLines.map((line, idx) => (
+                        <tr 
+                          key={idx} 
+                          className={`transition-colors ${
+                            line.type === 'add' 
+                              ? 'diff-line-add' 
+                              : line.type === 'del' 
+                              ? 'diff-line-del' 
+                              : 'diff-line-normal'
+                          }`}
+                        >
+                          <td className="w-10 py-0.5 px-2 text-right text-slate-600 select-none text-[11px]">
+                            {line.oldLine || ''}
+                          </td>
+                          <td className="w-10 py-0.5 px-2 text-right text-slate-600 select-none text-[11px]">
+                            {line.newLine || ''}
+                          </td>
+                          <td className="py-0.5 px-3 whitespace-pre font-mono">
+                            {line.text}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              {/* Pipeline Output */}
-              {astOutput && (
-                <div className="p-4 rounded-xl bg-slate-900 border border-[#6366F1]/50 space-y-3 animate-fadeIn">
+            {/* Tab 2: Semantic & OWASP Analysis */}
+            {activeWorkspaceTab === 'ast-details' && (
+              <div className="space-y-4">
+                <div className="bg-slate-900/90 rounded-xl p-4 border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-bold text-white">Gemini 3.8 Analysis Results</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
-                      <span>Latency: <strong className="text-[#06B6D4]">{astOutput.latencyMs}ms</strong></span>
-                      <span>Tokens: <strong className="text-purple-400">{astOutput.tokens}</strong></span>
-                      <span>Risk: <strong className="text-rose-400">{astOutput.riskScore}/100</strong></span>
-                    </div>
+                    <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4" />
+                      Vulnerability & Anti-Pattern Vectors
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">
+                      AST Nodes: {activePR.astDetails.nodesInspected} | Depth: {activePR.astDetails.depth}
+                    </span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    {astOutput.findings.map((f, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                        <span>{f}</span>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {activePR.summary}
+                  </p>
+
+                  <div className="space-y-2 pt-1">
+                    {activePR.semanticAnalysis.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                        <span className="text-[#6366F1] font-bold mt-0.5">•</span>
+                        <span>{item}</span>
                       </div>
                     ))}
                   </div>
+
+                  <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/60 mt-3 text-xs font-mono">
+                    <div className="text-cyan-400 font-bold mb-1">AST Fix Pattern Rule:</div>
+                    <div className="text-slate-300">{activePR.astDetails.astFixRule}</div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Tab 3: Gemini Prompt Playground */}
+            {activeWorkspaceTab === 'prompt-playground' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1.5 font-medium">Select Test Preset:</label>
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => setAstPreset('race')}
+                        className={`w-full text-left p-2 rounded-lg text-xs font-mono transition-all border ${
+                          astPreset === 'race'
+                            ? 'bg-[#6366F1]/20 border-[#6366F1] text-white font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        1. Concurrency Race Condition
+                      </button>
+                      <button
+                        onClick={() => setAstPreset('jwt')}
+                        className={`w-full text-left p-2 rounded-lg text-xs font-mono transition-all border ${
+                          astPreset === 'jwt'
+                            ? 'bg-[#6366F1]/20 border-[#6366F1] text-white font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        2. OWASP A03: ReDoS & Algorithm Spoofing
+                      </button>
+                      <button
+                        onClick={() => setAstPreset('leak')}
+                        className={`w-full text-left p-2 rounded-lg text-xs font-mono transition-all border ${
+                          astPreset === 'leak'
+                            ? 'bg-[#6366F1]/20 border-[#6366F1] text-white font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                        }`}
+                      >
+                        3. Memory Leak: Event Listener Accumulation
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1.5 font-medium">AST Pipeline Orchestration:</label>
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                      <div>Engine: <span className="text-cyan-400 font-bold">Gemini 3.8 Flash</span></div>
+                      <div>Parser: <span className="text-indigo-400 font-bold">Babel / TypeScript AST</span></div>
+                      <div>Output: <span className="text-emerald-400 font-bold">Strict JSON Schema</span></div>
+                    </div>
+                    <button
+                      onClick={handleRunASTPipeline}
+                      disabled={isSimulatingAST}
+                      className="w-full btn-cyan justify-center !py-2 text-xs font-bold mt-2"
+                    >
+                      {isSimulatingAST ? (
+                        <>
+                          <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Executing Pipeline...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5" />
+                          <span>Run Gemini AST Pipeline</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pipeline Output */}
+                {astOutput && (
+                  <div className="p-4 rounded-xl bg-[#070D1B] border border-[#6366F1]/50 space-y-2.5 animate-fadeIn">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-emerald-400" /> Analysis Results
+                      </span>
+                      <div className="flex items-center gap-3 text-slate-400 text-[11px]">
+                        <span>Latency: <strong className="text-cyan-400">{astOutput.latencyMs}ms</strong></span>
+                        <span>Tokens: <strong className="text-purple-400">{astOutput.tokens}</strong></span>
+                        <span>Risk: <strong className="text-rose-400">{astOutput.riskScore}/100</strong></span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 pt-1">
+                      {astOutput.findings.map((f, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
