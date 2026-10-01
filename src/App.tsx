@@ -258,35 +258,43 @@ export const App: React.FC = () => {
       />
 
       {/* Hero Quick Telemetry Ribbon */}
-      <section className="border-b border-slate-800/80 bg-slate-950/60 px-4 lg:px-6 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 text-xs font-mono overflow-x-auto">
-          <div className="flex items-center gap-4 shrink-0 text-slate-400">
-            <span className="flex items-center gap-1.5 text-slate-300">
+      <section className="border-b border-slate-800/80 bg-slate-950/50 px-4 lg:px-6 py-2">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3 text-xs overflow-x-auto">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 font-mono text-[11px]">
               <Activity className="w-3.5 h-3.5 text-[#06B6D4]" />
-              <strong>Repo Health:</strong> <span className="text-emerald-400">96/100</span>
-            </span>
-            <span>•</span>
-            <span>AST Complexity: <strong className="text-cyan-300">3.2 (Optimal)</strong></span>
-            <span>•</span>
-            <span>Build Variance: <strong className="text-emerald-400">-34% faster</strong></span>
-            <span>•</span>
-            <span>Test Coverage: <strong className="text-[#A5B4FC]">94.8%</strong></span>
+              <span className="text-slate-400">Health:</span>
+              <span className="font-bold text-emerald-400">96/100</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 font-mono text-[11px]">
+              <span className="text-slate-400">AST Complexity:</span>
+              <span className="font-bold text-cyan-300">3.2 (Optimal)</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 font-mono text-[11px]">
+              <span className="text-slate-400">CI Build:</span>
+              <span className="font-bold text-emerald-400">-34% faster</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 font-mono text-[11px]">
+              <span className="text-slate-400">Coverage:</span>
+              <span className="font-bold text-[#A5B4FC]">94.8%</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <button
-              onClick={() => setIsPitchOpen(true)}
-              className="text-[#EC4899] hover:underline font-semibold flex items-center gap-1"
-            >
-              <span>3-Min Hackathon Pitch Script</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
+          <button
+            onClick={() => setIsPitchOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-pink-950/30 border border-pink-500/30 text-pink-300 hover:text-white hover:border-pink-500 font-mono text-[11px] font-semibold transition-all shrink-0"
+          >
+            <span>3-Min Hackathon Pitch Script</span>
+            <ArrowRight className="w-3 h-3 text-[#EC4899]" />
+          </button>
         </div>
       </section>
 
       {/* Main Tab Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-6 py-6">
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 lg:px-6 py-5">
         {activeTab === 'auditor' && (
           <AuditorTab
             pullRequests={pullRequests}

@@ -12,8 +12,7 @@ import {
   Layers,
   FileCode,
   BarChart3,
-  CheckCircle2,
-  Bell
+  CheckCircle2
 } from 'lucide-react';
 import { TabType, RepositoryId } from '../types';
 import { REPOSITORIES } from '../data/mockData';
@@ -47,48 +46,47 @@ export const Header: React.FC<HeaderProps> = ({
   const selectedRepo = REPOSITORIES.find(r => r.id === selectedRepoId) || REPOSITORIES[0];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[rgba(148,163,184,0.12)] bg-[#0F172A]/90 backdrop-blur-md px-4 lg:px-6 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-[#0F172A]/95 backdrop-blur-xl px-4 lg:px-6 py-2.5">
+      <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
         
-        {/* Brand & Repo Selector */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('auditor')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6366F1] via-[#06B6D4] to-[#EC4899] p-[2px] shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-              <div className="w-full h-full bg-[#0F172A] rounded-[10px] flex items-center justify-center">
-                <Activity className="w-5 h-5 text-[#06B6D4] animate-pulse" />
+        {/* Left: Brand & Repository Selector */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div 
+            className="flex items-center gap-2.5 cursor-pointer select-none" 
+            onClick={() => setActiveTab('auditor')}
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6366F1] via-[#06B6D4] to-[#EC4899] p-[1.5px] shadow-[0_0_15px_rgba(99,102,241,0.35)] shrink-0">
+              <div className="w-full h-full bg-[#0F172A] rounded-[6.5px] flex items-center justify-center">
+                <Activity className="w-4 h-4 text-[#06B6D4] animate-pulse" />
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-heading font-extrabold text-xl tracking-tight hero-gradient-text">
-                  DevPulse AI
-                </span>
-                <span className="badge badge-indigo text-[10px] uppercase font-bold py-0.5">
-                  GIBC 2026
-                </span>
-              </div>
-              <p className="text-[11px] text-[#94A3B8] font-mono hidden sm:block">
-                Continuous Repository Copilot
-              </p>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-heading font-extrabold text-base tracking-tight text-white whitespace-nowrap">
+                DevPulse <span className="text-[#06B6D4]">AI</span>
+              </span>
+              <span className="badge badge-indigo text-[10px] uppercase font-bold py-0.5 px-2 hidden sm:inline-flex">
+                GIBC 2026
+              </span>
             </div>
           </div>
 
-          <div className="h-6 w-[1px] bg-slate-700/50 hidden md:block" />
+          <div className="h-5 w-[1px] bg-slate-800 hidden md:block" />
 
           {/* Repository Selector Dropdown */}
-          <div className="relative hidden sm:block">
+          <div className="relative hidden md:block">
             <button
               onClick={() => setShowRepoDropdown(!showRepoDropdown)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 hover:border-[#6366F1]/50 text-xs font-mono text-slate-200 transition-all"
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/90 border border-slate-700 hover:border-[#6366F1]/50 text-xs font-mono text-slate-200 transition-all"
             >
-              <GitBranch className="w-3.5 h-3.5 text-[#06B6D4]" />
-              <span className="font-medium truncate max-w-[170px]">{selectedRepo.name}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <GitBranch className="w-3.5 h-3.5 text-[#06B6D4] shrink-0" />
+              <span className="font-medium truncate max-w-[180px]">{selectedRepo.name}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
             {showRepoDropdown && (
-              <div className="absolute top-full left-0 mt-1.5 w-64 rounded-xl bg-[#0F172A] border border-slate-700 shadow-2xl p-1.5 z-50">
-                <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">
+              <div className="absolute top-full left-0 mt-1.5 w-64 rounded-xl bg-[#0F172A] border border-slate-700 shadow-2xl p-1.5 z-50 animate-fadeIn">
+                <div className="text-[10px] uppercase font-mono font-bold text-slate-400 px-2 py-1">
                   Active Repositories
                 </div>
                 {REPOSITORIES.map(repo => (
@@ -118,13 +116,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs (4 Core Pillars) */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+        {/* Center: Navigation Tabs (4 Core Pillars) */}
+        <nav className="hidden lg:flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
           <button
             onClick={() => setActiveTab('auditor')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               activeTab === 'auditor'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]'
+                ? 'bg-[#6366F1] text-white shadow-[0_0_14px_rgba(99,102,241,0.45)]'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -139,9 +137,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('visualizer')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               activeTab === 'visualizer'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]'
+                ? 'bg-[#6366F1] text-white shadow-[0_0_14px_rgba(99,102,241,0.45)]'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -151,9 +149,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('docs')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               activeTab === 'docs'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]'
+                ? 'bg-[#6366F1] text-white shadow-[0_0_14px_rgba(99,102,241,0.45)]'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -163,9 +161,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => setActiveTab('insights')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
               activeTab === 'insights'
-                ? 'bg-[#6366F1] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]'
+                ? 'bg-[#6366F1] text-white shadow-[0_0_14px_rgba(99,102,241,0.45)]'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
@@ -174,29 +172,24 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </nav>
 
-        {/* Action Controls & Presentation Tools */}
-        <div className="flex items-center gap-2">
-          {/* WebSocket Status Indicator */}
-          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono">
-            <span className="live-pulse" />
-            <span>WS: 450 msg/s</span>
-          </div>
-
+        {/* Right: Actions & Tools */}
+        <div className="flex items-center gap-2 shrink-0">
+          
           {/* Simulate Webhook Trigger */}
           <div className="relative">
             <button
               onClick={() => setShowWebhookMenu(!showWebhookMenu)}
-              className="btn-secondary !py-1.5 !px-2.5 text-xs"
-              title="Simulate Git Webhooks & AST Pipeline"
+              className="btn-secondary !py-1.5 !px-2.5 text-xs font-mono"
+              title="Simulate Git Webhooks"
             >
               <Zap className="w-3.5 h-3.5 text-[#06B6D4]" />
-              <span className="hidden sm:inline">Simulate Git Webhook</span>
+              <span className="hidden sm:inline">Simulate Webhook</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {showWebhookMenu && (
-              <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl bg-[#0F172A] border border-slate-700 shadow-2xl p-1.5 z-50">
-                <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">
+              <div className="absolute right-0 top-full mt-1.5 w-60 rounded-xl bg-[#0F172A] border border-slate-700 shadow-2xl p-1.5 z-50 animate-fadeIn">
+                <div className="text-[10px] uppercase font-mono font-bold text-slate-400 px-2 py-1">
                   Trigger Mock Git Events
                 </div>
                 <button
@@ -209,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <GitPullRequest className="w-3.5 h-3.5 text-[#EF4444]" />
                   <div>
                     <div className="font-medium">New PR Opened (#145)</div>
-                    <div className="text-[10px] text-slate-400">Triggers AST semantic review</div>
+                    <div className="text-[10px] text-slate-400">Triggers AST review</div>
                   </div>
                 </button>
                 <button
@@ -222,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Radio className="w-3.5 h-3.5 text-[#10B981]" />
                   <div>
                     <div className="font-medium">Git Push to main</div>
-                    <div className="text-[10px] text-slate-400">Re-indexes AST & regenerates spec</div>
+                    <div className="text-[10px] text-slate-400">Re-syncs OpenAPI & README</div>
                   </div>
                 </button>
                 <button
@@ -234,7 +227,7 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Sparkles className="w-3.5 h-3.5 text-[#6366F1]" />
                   <div>
-                    <div className="font-medium">Run Deep AST Scan</div>
+                    <div className="font-medium">Global AST Scan</div>
                     <div className="text-[10px] text-slate-400">OWASP & race condition audit</div>
                   </div>
                 </button>
@@ -242,11 +235,10 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* 3-Minute Hackathon Pitch Script Modal Button */}
+          {/* 3-Minute Hackathon Pitch Script Button */}
           <button
             onClick={onOpenPitch}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#EC4899]/20 to-[#6366F1]/20 border border-[#EC4899]/40 hover:border-[#EC4899] text-xs font-semibold text-pink-300 transition-all"
-            title="Open 3-Minute Pitch Script & Judging Alignment"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#EC4899]/15 to-[#6366F1]/15 border border-[#EC4899]/40 hover:border-[#EC4899] text-xs font-semibold text-pink-300 transition-all shrink-0"
           >
             <Mic className="w-3.5 h-3.5 text-[#EC4899]" />
             <span className="hidden sm:inline">3-Min Pitch</span>
@@ -255,9 +247,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* AI Copilot Drawer Toggle */}
           <button
             onClick={onToggleCopilot}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
               isCopilotOpen
-                ? 'bg-[#06B6D4] text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                ? 'bg-[#06B6D4] text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.5)]'
                 : 'bg-slate-800 border border-slate-700 hover:border-[#06B6D4]/50 text-cyan-300'
             }`}
           >
@@ -268,10 +260,10 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Mobile Navigation Bar */}
-      <nav className="flex lg:hidden items-center justify-around gap-1 mt-2.5 pt-2 border-t border-slate-800">
+      <nav className="flex lg:hidden items-center justify-around gap-1 mt-2 pt-2 border-t border-slate-800">
         <button
           onClick={() => setActiveTab('auditor')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg ${
             activeTab === 'auditor' ? 'bg-[#6366F1] text-white' : 'text-slate-400'
           }`}
         >
@@ -280,7 +272,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('visualizer')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg ${
             activeTab === 'visualizer' ? 'bg-[#6366F1] text-white' : 'text-slate-400'
           }`}
         >
@@ -289,16 +281,16 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
         <button
           onClick={() => setActiveTab('docs')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg ${
             activeTab === 'docs' ? 'bg-[#6366F1] text-white' : 'text-slate-400'
           }`}
         >
           <FileCode className="w-3 h-3" />
-          <span>Docs & API</span>
+          <span>Docs</span>
         </button>
         <button
           onClick={() => setActiveTab('insights')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg ${
             activeTab === 'insights' ? 'bg-[#6366F1] text-white' : 'text-slate-400'
           }`}
         >
